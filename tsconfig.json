@@ -1,18 +1,18 @@
 {
-    "compilerOptions": {
-      "lib": ["es6"],
-      "outDir": "build",
-      "removeComments": true,
-      "target": "ES6",
-      "moduleResolution": "node",
-      "sourceMap": true,
-      "sourceRoot": "/src",
-      "alwaysStrict": true,
-      "noImplicitAny": true,
-      "strictNullChecks": true,
-    },
-    "include": ["./src/**/*.ts"],
-    "exclude": [
-      "node_modules/**/*"
-    ]
+  "compilerOptions": {
+    "lib": ["es6"],
+    "outDir": "build",
+    "removeComments": true,
+    "module": "ESNext",
+    "target": "ES2017",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "sourceRoot": "/src",
+    "alwaysStrict": true,
+    "noImplicitAny": false,
+    "strictNullChecks": true,
+    "allowSyntheticDefaultImports": true,
+  },
+  "include": ["./src/**/*"],
+  "exclude": ["node_modules/**/*"]
 }

@@ -1,22 +1,25 @@
 {
   "name": "minecraft-name-checker",
   "version": "1.0.0",
-  "type": "commonjs",
+  "type": "module",
   "private": "true",
-  "main": "index.js",
+  "main": "build/index.js",
   "scripts": {
-    "start": "tsc && node build/index.js"
+    "start": "tsc && node ."
   },
-  "keywords": [],
   "author": "Rebux",
   "license": "MIT",
   "dependencies": {
-    "@types/node": "^18.15.11",
     "chalk": "^4.1.2",
     "cli-progress-footer": "^2.3.2",
     "dotenv": "^16.0.3",
     "node-fetch": "^2.6.9",
     "prompts": "^2.4.2",
     "typescript": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.11",
+    "@types/node-fetch": "^2.6.3",
+    "@types/prompts": "^2.4.4"
   }
 }
