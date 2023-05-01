@@ -32,14 +32,6 @@ const answers = await prompts([
   },
   {
     type: 'toggle',
-    name: 'burstClaim',
-    message: 'Claim with multiple requests?',
-    initial: false,
-    active: 'yes',
-    inactive: 'no'
-  },
-  {
-    type: 'toggle',
     name: 'loop',
     message: 'Loop scan?',
     initial: false,
@@ -55,7 +47,6 @@ const config: ApplicationConfig = {
   delay: answers.delay,
   filterInvalids: answers.filterInvalids,
   claim: answers.claim,
-  burstClaim: answers.burstClaim,
   loop: answers.loop
 };
 

@@ -48,16 +48,16 @@ export const setName = async (name: string): Promise<MojangNameChange> => {
   return await apiRequest('PUT', `https://api.minecraftservices.com/minecraft/profile/name/${name}`)
     .then(data => {
       return {
-        response: MojangNameChangeResponse.SUCCESS,
+        response: 'SUCCESS',
         name: data.name,
         id: data.id
-      };
+      } as MojangNameChange;
     })
     .catch(({ status, statusText }) => {
       if (status == 400)
-        return { response: MojangNameChangeResponse.INVALID_NAME };
+        return { response: 'INVALID_NAME' };
       else if (status == 403)
-        return { response: MojangNameChangeResponse.UNAVAILABLE };
+        return { response: 'UNAVAILABLE' };
       else {
         return Promise.reject({ 
           status: status, 

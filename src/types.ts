@@ -4,9 +4,12 @@ type ApplicationConfig = {
   filterInvalids: boolean;
   delay: number;
   claim: boolean;
-  burstClaim: boolean;
   loop: boolean;
 };
+
+type NameAvailability = 'AVAILABLE' | 'UPCOMING' | 'DUPLICATE' | 'DEACTIVATED' | 'NOT_ALLOWED';
+
+type MojangNameAvailability = 'AVAILABLE' | 'DUPLICATE' | 'NOT_ALLOWED';
 
 type MojangProfile = {
   name: string;
@@ -14,33 +17,7 @@ type MojangProfile = {
 };
 
 type MojangNameChange = {
-  response: MojangNameChangeResponse;
+  response: 'SUCCESS' | 'INVALID_NAME' | 'UNAVAILABLE';
   name?: string | undefined;
   id?: string | undefined;
-};
-
-enum MojangNameChangeResponse {
-  SUCCESS,
-  INVALID_NAME,
-  UNAVAILABLE
-};
-
-enum MojangNameAvailability {
-  AVAILABLE,
-  DUPLICATE,
-  NOT_ALLOWED
-};
-
-type ScanResult = {
-  available: Array<string>;
-  upcoming: Array<UpcomingName>;
-  duplicate: Array<string>;
-  deactivated: Array<string>;
-  banned: Array<string>;
-};
-
-type UpcomingName = {
-  name: string;
-  nameMc: string;
-  timestamp: number;
 };
