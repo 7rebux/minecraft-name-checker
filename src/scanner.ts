@@ -1,82 +1,75 @@
-import { 
-  info,
-  footer, 
-  progressBar,
-  error 
-} from './logging.js';
-import { 
-  getNameAvailability, 
-  getProfile, 
-  isNameValid, 
-  setName
-} from './mojangApi.js';
+import * as logger from "./logging.js";
+import { getNameAvailability, getProfile, setName } from "./mojangApi.js";
 
 export const scan = async (config: ApplicationConfig) => {
-  const result: {[key in NameAvailability]: string[]} = {
-    AVAILABLE: [],
-    UPCOMING: [],
-    DUPLICATE: [],
-    DEACTIVATED: [],
-    NOT_ALLOWED: []
-  };
+  const { name, delay, claim } = config;
+  let counter = 0;
 
-  for (const [i, name] of config.input.entries()) {
-    await new Promise(resolve => setTimeout(resolve, config.delay));
-    footer(`${progressBar(i + 1, config.input.length)} -- ${name}`);
+  while (true) {
+    try {
+      const availability = await getAvailabilty(name);
 
-    // validate name
-    if (config.filterInvalids && !isNameValid(name)) continue;
+      if (availability === "DUPLICATE") {
+        logger.error(`Name "${name}" most likely was taken by someone else`);
+        return;
+      }
 
-    // check name availability
-    const availability = await getAvailabilty(name);
-    
-    result[availability].push(name);
+      if (availability === "AVAILABLE") {
+        logger.info(`Name "${name}" is available`);
 
-    if (availability == 'AVAILABLE') {
-      info(`Found available name: ${name}`)
-      
-      if (!config.claim) continue;
-      
-      // claim name
-      info('Attempting name change..')
+        if (!claim) return;
 
-      if (await claim(name)) {
-        info('Aborting..');
-        process.exit();
+        const success = await claimName(name);
+
+        if (!success) {
+          logger.info("Resuming scan...");
+        } else {
+          return;
+        }
+      }
+
+      logger.footer(
+        `Attempts: ${++counter} | Last availability: ${availability}`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    } catch (error) {
+      if (error.status === 429) {
+        logger.footer(`Attempts: ${++counter} | Waiting for rate limit`);
+        await new Promise((resolve) => setTimeout(resolve, 1000 * 60 * 10));
       } else {
-        info('Resuming scan..')
+        throw error;
       }
     }
   }
-
-  return result;
 };
 
-const getAvailabilty = async (name: string): Promise<NameAvailability> => {
+export const getAvailabilty = async (
+  name: string
+): Promise<NameAvailability> => {
   const profile = await getProfile(name);
 
-  // check if a minecraft profile with the name exists
-  if (profile.id) return 'DUPLICATE';
+  if (profile.id) return "DUPLICATE";
 
-  // check mojang api name availability
   switch (await getNameAvailability(name)) {
-    case 'AVAILABLE': return 'AVAILABLE';
-    case 'DUPLICATE': return 'DEACTIVATED'; // TODO or upcoming
-    case 'NOT_ALLOWED': return 'NOT_ALLOWED';
+    case "AVAILABLE":
+      return "AVAILABLE";
+    case "DUPLICATE":
+      return "UPCOMING";
+    case "NOT_ALLOWED":
+      return "NOT_ALLOWED";
   }
-}
+};
 
-const claim = async (name: string): Promise<boolean> => {
+export const claimName = async (name: string): Promise<boolean> => {
+  logger.info("Attempting name change...");
+
   const response = await setName(name);
 
-  if (response.response == 'SUCCESS') {
-    info(`Successfully changed name to ${response.name}!`);
-    info(`NameMC: https://de.namemc.com/search?q=${response.id}`);
-
+  if (response.response == "SUCCESS") {
+    logger.info(`Successfully changed name to "${response.name}"`);
     return true;
   } else {
-    error(`Failed to change name to ${name}!`);
-
+    logger.error(`Failed to change name (${response.response})`);
     return false;
   }
-}
+};

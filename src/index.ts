@@ -1,61 +1,100 @@
-import prompts from 'prompts';
-import { info } from './logging.js';
-import { scan } from './scanner.js';
-import { readFileSync } from 'fs';
+import prompts from "prompts";
+import * as logger from "./logging.js";
+import { claimName, getAvailabilty, scan } from "./scanner.js";
+import {
+  getMyProfile,
+  getNameChangeInformation,
+  isNameValid,
+} from "./mojangApi.js";
 
 const answers = await prompts([
   {
-    type: 'text',
-    name: 'inputFile',
-    message: 'Enter input file:'
+    type: "text",
+    name: "name",
+    message: "Enter the name to check:",
   },
   {
-    type: 'toggle',
-    name: 'filterInvalids',
-    message: 'Filter out invalid names?',
-    initial: true,
-    active: 'yes',
-    inactive: 'no'
+    type: "number",
+    name: "delay",
+    message: "Enter request delay (ms):",
   },
   {
-    type: 'number',
-    name: 'delay',
-    message: 'Enter request delay:'
-  },
-  {
-    type: 'toggle',
-    name: 'claim',
-    message: 'Claim first valid name?',
+    type: "toggle",
+    name: "claim",
+    message: "Claim if available?",
     initial: false,
-    active: 'yes',
-    inactive: 'no'
+    active: "yes",
+    inactive: "no",
   },
-  {
-    type: 'toggle',
-    name: 'loop',
-    message: 'Loop scan?',
-    initial: false,
-    active: 'yes',
-    inactive: 'no'
-  }
 ]);
-const config: ApplicationConfig = {
-  inputFile: answers.inputFile,
-  input: readFileSync(answers.inputFile, 'utf-8')
-    .split('\n')
-    .map(x => x.replace(/[\r\n]/gm, '')),
+
+const config = {
+  name: answers.name,
   delay: answers.delay,
-  filterInvalids: answers.filterInvalids,
   claim: answers.claim,
-  loop: answers.loop
 };
 
-info(`Loaded ${config.input.length} names from ${config.inputFile}`);
-info(`Starting scan..`);
+async function main() {
+  if (!isNameValid(config.name)) {
+    logger.error(`Name "${config.name}" is invalid`);
+    return;
+  }
 
-while (true) {
-  const result = await scan(config);
-  console.log(result);
+  const profile = await getMyProfile();
+  const info = await getNameChangeInformation();
+  const availability = await getAvailabilty(config.name);
 
-  if (!config.loop) break;
+  logger.info(`Using account: ${profile.name} (${profile.id})`);
+  logger.info(`Last name change: ${info.changedAt}`);
+  if (!info.nameChangeAllowed) {
+    logger.warn("This account is not able to change its name");
+    if (config.claim) return;
+  }
+
+  logger.info(`Testing name availability for "${config.name}"...`);
+  logger.info(`NameMC search: https://de.namemc.com/search?q=${config.name}`);
+  switch (availability) {
+    case "DUPLICATE": {
+      logger.error(
+        `Name "${config.name}" is currently taken by another player`
+      );
+      logger.info(
+        `More information here: https://namemc.com/profile/${config.name}`
+      );
+      return;
+    }
+    case "NOT_ALLOWED": {
+      logger.error(
+        `Name "${config.name}" is not allowed due to Mojang/Microsoft restrictions`
+      );
+      return;
+    }
+    case "AVAILABLE": {
+      logger.info(`Name "${config.name}" seems to already be available`);
+
+      if (!config.claim) return;
+
+      const success = await claimName(config.name);
+
+      if (!success) {
+        logger.info("Resuming scan...");
+        break;
+      } else {
+        return;
+      }
+    }
+    case "UPCOMING": {
+      logger.info(`Name "${config.name}" is either upcoming or deactivated`);
+    }
+  }
+
+  logger.info("Starting scan...");
+  scan(config);
+}
+
+try {
+  main();
+} catch (error) {
+  logger.error("Encountered unexpected error!");
+  console.log(error);
 }
