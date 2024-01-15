@@ -93,7 +93,7 @@ async function main() {
 }
 
 try {
-  main();
+  await main();
 } catch (error) {
   logger.error("Encountered unexpected error!");
   console.log(error);

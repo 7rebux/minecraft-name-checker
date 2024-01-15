@@ -4,6 +4,7 @@ import { getNameAvailability, getProfile, setName } from "./mojangApi.js";
 export const scan = async (config: ApplicationConfig) => {
   const { name, delay, claim } = config;
   let counter = 0;
+  let rlCounter = 0;
 
   while (true) {
     try {
@@ -29,15 +30,17 @@ export const scan = async (config: ApplicationConfig) => {
       }
 
       logger.footer(
-        `Attempts: ${++counter} | Last availability: ${availability}`
+        `Attempts: ${++counter} | Last availability: ${availability} | Rate limits hit: ${rlCounter}`
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
     } catch (error) {
       if (error.status === 429) {
-        logger.footer(`Attempts: ${++counter} | Waiting for rate limit`);
-        await new Promise((resolve) => setTimeout(resolve, 1000 * 60 * 10));
+        logger.footer(
+          `Attempts: ${++counter} | Waiting for rate limit | Rate limits hit: ${++rlCounter}`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1000 * 60));
       } else {
-        throw error;
+        console.log("Some error: " + error);
       }
     }
   }
